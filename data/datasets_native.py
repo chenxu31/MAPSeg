@@ -7,6 +7,7 @@ import torchio as tio
 import torch
 import numpy as np
 import numpy
+import random
 import h5py
 
 
@@ -35,10 +36,13 @@ class mae_dataset(data.Dataset):
                 self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
                 self.dst_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.dst_modality), "r")
 
-            if index >= self.num_src:
-                tmp_scans = numpy.array(self.dst_f["data"][index - self.num_src])
+
+            if index // 2 == 0:
+                subject_id = random.randint(0, self.num_src - 1)
+                tmp_scans = numpy.array(self.src_f["data"][subject_id])
             else:
-                tmp_scans = numpy.array(self.src_f["data"][index])
+                subject_id = random.randint(0, self.num_dst - 1)
+                tmp_scans = numpy.array(self.dst_f["data"][subject_id])
 
             tmp_scans = tmp_scans.astype(numpy.float32) / 255.
             ####TODO resize?
@@ -125,7 +129,7 @@ class mae_dataset(data.Dataset):
         # we used fixed 2000 as the number of samples in each epoch
         # one can choose max(2000, self.all_img)
         # return max(2000, self.all_img)
-        return self.num_src + self.num_dst
+        return 2000
 
 
 class mpl_dataset(data.Dataset):
@@ -136,29 +140,21 @@ class mpl_dataset(data.Dataset):
 
         # data from target domain, only img (folder name should end with '_train')
 
-        tgt_dir, src_dir1 = list_finetune_domains(
-            cfg.data.tgt_data, cfg.data.src_data)
+        self.src_f = None
+        self.dst_f = None
 
-        self.path_dic = {}
-        for i in range(len(tgt_dir)):
-            self.path_dic[str(i)] = sorted(
-                list_scans(tgt_dir[i], self.cfg.data.extension))
-        self.num_domain = len(tgt_dir)
+        if cfg.data.task == "pelvic":
+            pass
+        elif cfg.data.task == "brats":
+            src_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.src_modality), "r")
+            dst_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.dst_modality), "r")
+            self.num_src = src_f["data"].shape[0]
+            self.num_dst = dst_f["data"].shape[0]
+        else:
+            assert 0
 
-        # data from source domain,  img + label (folder name should end with '_img' for img and '_label' for label)
-
-        self.path_dic_B1 = {}
-        self.path_dic_B2 = {}
-        for i in range(len(src_dir1)):
-            self.path_dic_B1[str(i)] = sorted(
-                list_scans(src_dir1[i], self.cfg.data.extension))
-            self.path_dic_B2[str(i)] = [i.replace(
-                '_img', '_label') for i in self.path_dic_B1[str(i)]]
-
-        self.num_domain_B = len(src_dir1)
-
-        print('num of target domian: ' + str(self.num_domain))
-        print('num of source domain: ' + str(self.num_domain_B))
+        print('num of target: ' + str(self.num_dst))
+        print('num of source: ' + str(self.num_src))
 
     def __getitem__(self, index):
         idx = int(np.random.random_sample() // (1 / self.num_domain))
