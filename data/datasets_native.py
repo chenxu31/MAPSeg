@@ -9,6 +9,16 @@ import numpy as np
 import numpy
 import random
 import h5py
+import platform
+import sys
+
+
+if platform.system() == "Windows":
+    sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
+else:
+    sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
+import common_brats_goat as common_brats
+import common_metrics
 
 
 class mae_dataset(data.Dataset):
@@ -20,13 +30,9 @@ class mae_dataset(data.Dataset):
         if cfg.data.task == "pelvic":
             pass
         elif cfg.data.task == "brats":
-            src_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.src_modality), "r")
-            dst_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.dst_modality), "r")
-            self.num_src = src_f["data"].shape[0]
-            self.num_dst = dst_f["data"].shape[0]
+            self.subject_groups = common_brats.calc_subject_partitions()
         else:
             assert 0
-
 
     def __getitem__(self, index):
         if self.cfg.data.task == "pelvic":
@@ -36,16 +42,14 @@ class mae_dataset(data.Dataset):
                 self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
                 self.dst_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.dst_modality), "r")
 
-
             if index // 2 == 0:
-                subject_id = random.randint(0, self.num_src - 1)
-                tmp_scans = numpy.array(self.src_f["data"][subject_id])
+                subject_id = random.randint(0, self.subject_groups[0][1] - 1)
+                tmp_scans = numpy.array(self.src_f["data"][self.subject_groups[0][0] + subject_id])
             else:
-                subject_id = random.randint(0, self.num_dst - 1)
-                tmp_scans = numpy.array(self.dst_f["data"][subject_id])
+                subject_id = random.randint(0, self.subject_groups[1][1] - 1)
+                tmp_scans = numpy.array(self.dst_f["data"][self.subject_groups[1][0] + subject_id])
 
             tmp_scans = tmp_scans.astype(numpy.float32) / 255.
-            ####TODO resize?
 
         tmp_scans = random_flip(tmp_scans).copy()
 
@@ -146,10 +150,7 @@ class mpl_dataset(data.Dataset):
         if cfg.data.task == "pelvic":
             pass
         elif cfg.data.task == "brats":
-            src_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.src_modality), "r")
-            dst_f = h5py.File(os.path.join(cfg.data.mae_root, "train_%s.h5" % cfg.data.dst_modality), "r")
-            self.num_src = src_f["data"].shape[0]
-            self.num_dst = dst_f["data"].shape[0]
+            self.subject_groups = common_brats.calc_subject_partitions()
         else:
             assert 0
 
@@ -157,36 +158,32 @@ class mpl_dataset(data.Dataset):
         print('num of source: ' + str(self.num_src))
 
     def __getitem__(self, index):
-        idx = int(np.random.random_sample() // (1 / self.num_domain))
-        tmp_path = self.path_dic[str(idx)]
-        indexA = np.random.randint(0, len(tmp_path))
-
-        idx = int(np.random.random_sample() // (1 / self.num_domain_B))
-        tmp_path_B1 = self.path_dic_B1[str(idx)]
-        tmp_path_B2 = self.path_dic_B2[str(idx)]
-
-        indexB = np.random.randint(0, len(tmp_path_B1))
-        x, y, z = self.cfg.data.patch_size
         '''
         getitem for training/validation
         '''
+        if self.cfg.data.task == "pelvic":
+            pass
+        elif self.cfg.data.task == "brats":
+            if self.src_f is None:
+                self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
+                self.dst_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.dst_modality), "r")
+                self.seg_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_seg.h5"), "r")
 
-        '''
-        load non-labeled data
-        '''
-        tmp_scansA = nib.load(tmp_path[indexA])
+            '''
+            load non-labeled data
+            '''
+            subject_id = random.randint(0, self.subject_groups[1][1] - 1)
+            tmp_scansA = numpy.array(self.dst_f["data"][self.subject_groups[1][0] + subject_id])
+            tmp_scansA = tmp_scansA.astype(numpy.float32) / 255.
 
-        tmp_scansA = np.squeeze(tmp_scansA.get_fdata())
-        tmp_scansA[tmp_scansA < 0] = 0
+            '''
+            load annotated data
+            '''
+            subject_id = random.randint(0, self.subject_groups[0][1] - 1)
+            tmp_scansB = numpy.array(self.src_f["data"][self.subject_groups[0][0] + subject_id])
+            tmp_scansB = tmp_scansB.astype(numpy.float32) / 255.
+            tmp_labelsB = numpy.array(self.seg_f["data"][self.subject_groups[0][0] + subject_id])
 
-        # normalization
-        if self.cfg.data.normalize:
-            if np.random.uniform() <= self.cfg.data.aug_prob:
-                perc_dif = 100 - self.cfg.data.norm_perc
-                tmp_scansA = norm_img(tmp_scansA, np.random.uniform(
-                    self.cfg.data.norm_perc - perc_dif, 100))
-            else:
-                tmp_scansA = norm_img(tmp_scansA, self.cfg.data.norm_perc)
         # padding
         if min(tmp_scansA.shape) < min(x, y, z):
             x_diff = 96-tmp_scansA.shape[0]
@@ -289,25 +286,14 @@ class mpl_dataset(data.Dataset):
         load annotated data
         '''
 
-        tmp_scans = nib.load(tmp_path_B1[indexB])
-        tmp_scans = np.squeeze(tmp_scans.get_fdata())
+        tmp_scans = tmp_scansB
         '''
         WARNING: HERE WE ONLY USE POSITIVE INTENSITY 
         FOR CT, USE PREPROCESSING TO turn negatives to positives 
         
         '''
-        tmp_scans[tmp_scans < 0] = 0
-        tmp_label = np.squeeze(
-            np.round(nib.load(tmp_path_B2[indexB]).get_fdata()))
+        tmp_label = tmp_labelsB
         assert tmp_scans.shape == tmp_label.shape, 'scan and label must have the same shape'
-
-        if self.cfg.data.normalize:
-            if np.random.uniform() <= self.cfg.data.aug_prob:
-                perc_dif = 100 - self.cfg.data.norm_perc
-                tmp_scans = norm_img(tmp_scans, np.random.uniform(
-                    self.cfg.data.norm_perc - perc_dif, 100))
-            else:
-                tmp_scans = norm_img(tmp_scans, self.cfg.data.norm_perc)
 
         if min(tmp_scans.shape) < min(x, y, z):
             x_diff = x-tmp_scans.shape[0]
