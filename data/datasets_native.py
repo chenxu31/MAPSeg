@@ -154,8 +154,8 @@ class mpl_dataset(data.Dataset):
         else:
             assert 0
 
-        print('num of target: ' + str(self.num_dst))
-        print('num of source: ' + str(self.num_src))
+        print('num of source: ' + str(self.subject_groups[0][1]))
+        print('num of target: ' + str(self.subject_groups[1][1]))
 
     def __getitem__(self, index):
         '''
@@ -183,6 +183,9 @@ class mpl_dataset(data.Dataset):
             tmp_scansB = numpy.array(self.src_f["data"][self.subject_groups[0][0] + subject_id])
             tmp_scansB = tmp_scansB.astype(numpy.float32) / 255.
             tmp_labelsB = numpy.array(self.seg_f["data"][self.subject_groups[0][0] + subject_id])
+
+        tmp_labelsB[tmp_labelsB > 0] = 1
+        x, y, z = self.cfg.data.patch_size
 
         # padding
         if min(tmp_scansA.shape) < min(x, y, z):

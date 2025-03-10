@@ -15,6 +15,7 @@ import nibabel as nib
 import random
 import platform
 import sys
+import numpy
 
 
 if platform.system() == "Windows":
@@ -488,9 +489,9 @@ class mpl_trainer(nn.Module):
 
     def validation(self, epoch):
         if not self.cfg.train.test_time:
-            if self.cfg.task == "pelvic":
+            if self.cfg.data.task == "pelvic":
                 pass
-            elif self.cfg.task == "brats":
+            elif self.cfg.data.task == "brats":
                 common_file = common_brats
                 val_data, val_label = common_brats.load_test_data(self.cfg.data.mae_root, "val", (self.cfg.data.dst_modality, "seg"))
                 val_data = (val_data + 1.) / 2.
@@ -504,12 +505,12 @@ class mpl_trainer(nn.Module):
                 tmp_label = val_label[i]
 
                 tmp_pred = self.infer_single_scan(tmp_scans)
-                if self.cfg.task == "pelvic":
+                if self.cfg.data.task == "pelvic":
                     pass
-                elif self.cfg.task == "brats":
+                elif self.cfg.data.task == "brats":
                     dsc = common_metrics.dc(tmp_pred, tmp_label)
 
-                dsc_list.append(dsc)
+                dsc_list[i] = dsc
 
                 # save the prediciton and GT
                 if self.cfg.system.save_nii:
