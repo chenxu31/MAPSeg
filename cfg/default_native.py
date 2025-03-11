@@ -69,11 +69,11 @@ _c.data.dst_modality = ''
 # file extension fo the data
 _c.data.extension = '.nii.gz'
 # whether to normalize the data
-_c.data.normalize = True
+_c.data.normalize = False
 # normalization percentile for data
 _c.data.norm_perc = 99.5
 # whether to remove background
-_c.data.remove_bg = True
+_c.data.remove_bg = False
 # whether to do data augmentation
 _c.data.aug = False
 # probability of data augmentation
