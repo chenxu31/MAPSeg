@@ -75,7 +75,7 @@ _c.data.norm_perc = 99.5
 # whether to remove background
 _c.data.remove_bg = True
 # whether to do data augmentation
-_c.data.aug = True
+_c.data.aug = False
 # probability of data augmentation
 _c.data.aug_prob = 0.35
 # size of 3D patch
