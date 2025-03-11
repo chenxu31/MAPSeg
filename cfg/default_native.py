@@ -16,7 +16,7 @@ _c.system.n_threads = 4
 # random seed
 _c.system.seed = 0
 # whether to save nifti during training
-_c.system.save_nii = True
+_c.system.save_nii = False
 # display image size
 _c.system.display_winsize = 128
 # save image output into HTML
