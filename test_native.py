@@ -1,15 +1,17 @@
 import torch
 import os
-from cfg.default import get_cfg_defaults
+from cfg.default_native import get_cfg_defaults
 from model.mpl_seg import EMA_MPL
 from model.utils import util
 import numpy as np
 import pandas
 import torchio as tio
 import nibabel as nib
-import medpy.metric.binary as mmb
+#import medpy.metric.binary as mmb
 import argparse
 import numpy
+import platform
+import sys
 
 
 if platform.system() == "Windows":
@@ -120,9 +122,11 @@ exps_lst = [
 is_test = True
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
     parser.add_argument('--gpu', type=int, default=0, help="gpu device id")
     parser.add_argument('--exp_dir', type=str, default='', help="the output directory")
     parser.add_argument('--output_dir', type=str, default='', help="the output directory")
+    args = parser.parse_args()
 
     if args.gpu >= 0:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
@@ -167,6 +171,7 @@ if __name__ == '__main__':
 
         dsc_list[i] = dsc
         assd_list[i] = assd
+        print(i, "dsc", dsc_list[i].mean(), "assd", assd_list[i].mean())
 
     msg = "dsc:%f/%f  assd:%f/%f" % (dsc_list.mean(), dsc_list.std(), assd_list.mean(), assd_list.std())
     self.logger.info(msg)
