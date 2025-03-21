@@ -1,3 +1,5 @@
+import pdb
+
 from .mae_cnn import MAE_CNN
 from .mpl_seg import EMA_MPL
 import torch.nn as nn
@@ -22,6 +24,7 @@ if platform.system() == "Windows":
     sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
 else:
     sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
+import common_pelvic
 import common_brats_goat as common_brats
 import common_metrics
 
@@ -490,7 +493,9 @@ class mpl_trainer(nn.Module):
     def validation(self, epoch):
         if not self.cfg.train.test_time:
             if self.cfg.data.task == "pelvic":
-                pass
+                common_file = common_brats
+                _, val_data, _, val_label = common_pelvic.load_val_data(self.cfg.data.mae_root)
+                val_data = (val_data + 1.) / 2.
             elif self.cfg.data.task == "brats":
                 common_file = common_brats
                 val_data, val_label = common_brats.load_test_data(self.cfg.data.mae_root, "val", (self.cfg.data.dst_modality, "seg"))
@@ -498,7 +503,6 @@ class mpl_trainer(nn.Module):
             else:
                 assert 0
 
-            cur_dsc = 0
             dsc_list = numpy.zeros((val_data.shape[0], self.cfg.train.cls_num - 1), numpy.float32)
             for i in range(val_data.shape[0]):
                 tmp_scans = val_data[i]
@@ -506,7 +510,7 @@ class mpl_trainer(nn.Module):
 
                 tmp_pred = self.infer_single_scan(tmp_scans)
                 if self.cfg.data.task == "pelvic":
-                    pass
+                    dsc = common_metrics.calc_multi_dice(tmp_pred, tmp_label, num_cls=self.cfg.train.cls_num)
                 elif self.cfg.data.task == "brats":
                     dsc = common_metrics.dc(tmp_pred, tmp_label)
 

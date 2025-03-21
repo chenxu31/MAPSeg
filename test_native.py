@@ -18,6 +18,7 @@ if platform.system() == "Windows":
     sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
 else:
     sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
+import common_pelvic_pt as common_pelvic
 import common_brats_goat as common_brats
 import common_metrics
 
@@ -143,9 +144,9 @@ if __name__ == '__main__':
         os.path.join(args.exp_dir, 'best_model.pth')), strict=True)
 
     if cfg.data.task == "pelvic":
-        pass
+        _, test_data, _, test_label = common_pelvic.load_val_data(cfg.data.mae_root)
+        test_data = (test_data + 1.) / 2.
     elif cfg.data.task == "brats":
-        num_classes = common_brats.NUM_CLASSES
         test_data, test_label = common_brats.load_test_data(cfg.data.mae_root, "test", (cfg.data.dst_modality, "seg"))
         test_data = (test_data + 1.) / 2.
     else:
@@ -154,8 +155,8 @@ if __name__ == '__main__':
     if args.output_dir and not os.path.exists(args.output_dir):
         os.mkdir(args.output_dir)
 
-    dsc_list = numpy.zeros((test_data.shape[0], num_classes - 1), numpy.float32)
-    assd_list = numpy.zeros((test_data.shape[0], num_classes - 1), numpy.float32)
+    dsc_list = numpy.zeros((test_data.shape[0], cfg.train.cls_num - 1), numpy.float32)
+    assd_list = numpy.zeros((test_data.shape[0], cfg.train.cls_num - 1), numpy.float32)
     for i in range(test_data.shape[0]):
         test_img = test_data[i]
         with torch.no_grad():
@@ -164,7 +165,8 @@ if __name__ == '__main__':
         gt = test_label[i]
 
         if cfg.data.task == "pelvic":
-            pass
+            dsc = common_metrics.calc_multi_dice(pred_vol, gt, num_cls=cfg.train.cls_num)
+            assd = common_metrics.calc_multi_assd(pred_vol, gt, num_cls=cfg.train.cls_num)
         elif cfg.data.task == "brats":
             dsc = common_metrics.dc(pred_vol, gt)
             assd = common_metrics.assd(pred_vol, gt)
