@@ -153,7 +153,7 @@ if __name__ == '__main__':
         assert 0
 
     if args.output_dir and not os.path.exists(args.output_dir):
-        os.mkdir(args.output_dir)
+        os.makedirs(args.output_dir)
 
     dsc_list = numpy.zeros((test_data.shape[0], cfg.train.cls_num - 1), numpy.float32)
     assd_list = numpy.zeros((test_data.shape[0], cfg.train.cls_num - 1), numpy.float32)
