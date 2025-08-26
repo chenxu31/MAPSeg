@@ -144,7 +144,7 @@ if __name__ == '__main__':
         os.path.join(args.exp_dir, 'best_model.pth')), strict=True)
 
     if cfg.data.task == "pelvic":
-        _, test_data, _, test_label = common_pelvic.load_val_data(cfg.data.mae_root)
+        _, test_data, _, test_label = common_pelvic.load_test_data(cfg.data.mae_root)
         test_data = (test_data + 1.) / 2.
     elif cfg.data.task == "brats":
         test_data, test_label = common_brats.load_test_data(cfg.data.mae_root, "test", (cfg.data.dst_modality, "seg"))
@@ -176,7 +176,7 @@ if __name__ == '__main__':
         print(i, "dsc", dsc_list[i].mean(), "assd", assd_list[i].mean())
 
     msg = "dsc:%f/%f  assd:%f/%f" % (dsc_list.mean(), dsc_list.std(), assd_list.mean(), assd_list.std())
-    self.logger.info(msg)
+    print(msg)
 
     if args.output_dir:
         numpy.save(os.path.join(args.output_dir, "dsc.npy"), dsc_list)
