@@ -88,7 +88,8 @@ if __name__ == '__main__':
 
     # initialize the wandb
     if cfg.system.wandb:
-        wandb.init(project=cfg.system.project,
+        wandb.init(mode="offline",
+                   project=cfg.system.project,
                    config=cfg, name=cfg.system.exp_name)
 
     # get data loader
