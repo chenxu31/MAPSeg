@@ -1,0 +1,20 @@
+system:
+  project: 'amos'
+  exp_name: 'mae'
+  n_threads: 8
+  ckpt_dir: r'/home/chenxu/training/checkpoints/mapseg'
+  seed: 0
+
+train: 
+  niter: 200
+  niter_decay: 100
+  type: 'mae'
+
+data: 
+  task: 'pelvic'
+  mae_root: r'/home/chenxu/datasets/amos/h5_data'
+  src_modality: 'mr'
+  dst_modality: 'ct'
+
+model:
+  pretrain_model: None 

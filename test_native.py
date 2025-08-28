@@ -19,6 +19,7 @@ if platform.system() == "Windows":
 else:
     sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
 import common_pelvic_pt as common_pelvic
+import common_amos
 import common_brats_goat as common_brats
 import common_metrics
 
@@ -146,6 +147,9 @@ if __name__ == '__main__':
     if cfg.data.task == "pelvic":
         _, test_data, _, test_label = common_pelvic.load_test_data(cfg.data.mae_root)
         test_data = (test_data + 1.) / 2.
+    elif cfg.data.task == "amos":
+        _, test_data, _, test_label = common_amos.load_test_data(cfg.data.mae_root, "test")
+        test_data = (test_data + 1.) / 2.
     elif cfg.data.task == "brats":
         test_data, test_label = common_brats.load_test_data(cfg.data.mae_root, "test", (cfg.data.dst_modality, "seg"))
         test_data = (test_data + 1.) / 2.
@@ -164,10 +168,10 @@ if __name__ == '__main__':
         pred_vol = pred_vol.astype(np.uint8)
         gt = test_label[i]
 
-        if cfg.data.task == "pelvic":
+        if cfg.train.cls_num > 2:
             dsc = common_metrics.calc_multi_dice(pred_vol, gt, num_cls=cfg.train.cls_num)
             assd = common_metrics.calc_multi_assd(pred_vol, gt, num_cls=cfg.train.cls_num)
-        elif cfg.data.task == "brats":
+        else:
             dsc = common_metrics.dc(pred_vol, gt)
             assd = common_metrics.assd(pred_vol, gt)
 

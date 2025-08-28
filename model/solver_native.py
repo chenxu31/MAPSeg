@@ -24,7 +24,8 @@ if platform.system() == "Windows":
     sys.path.append(r"E:\我的坚果云\sourcecode\python\util")
 else:
     sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
-import common_pelvic
+import common_pelvic_pt as common_pelvic
+import common_amos
 import common_brats_goat as common_brats
 import common_metrics
 
@@ -493,8 +494,12 @@ class mpl_trainer(nn.Module):
     def validation(self, epoch):
         if not self.cfg.train.test_time:
             if self.cfg.data.task == "pelvic":
-                common_file = common_brats
+                common_file = common_pelvic
                 _, val_data, _, val_label = common_pelvic.load_val_data(self.cfg.data.mae_root)
+                val_data = (val_data + 1.) / 2.
+            elif self.cfg.data.task == "amos":
+                common_file = common_amos
+                _, val_data, _, val_label = common_amos.load_test_data(self.cfg.data.mae_root, "val")
                 val_data = (val_data + 1.) / 2.
             elif self.cfg.data.task == "brats":
                 common_file = common_brats
@@ -509,9 +514,9 @@ class mpl_trainer(nn.Module):
                 tmp_label = val_label[i]
 
                 tmp_pred = self.infer_single_scan(tmp_scans)
-                if self.cfg.data.task == "pelvic":
+                if self.cfg.train.cls_num > 2:
                     dsc = common_metrics.calc_multi_dice(tmp_pred, tmp_label, num_cls=self.cfg.train.cls_num)
-                elif self.cfg.data.task == "brats":
+                else:
                     dsc = common_metrics.dc(tmp_pred, tmp_label)
 
                 dsc_list[i] = dsc

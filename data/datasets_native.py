@@ -18,6 +18,7 @@ if platform.system() == "Windows":
 else:
     sys.path.append("/home/chenxu/我的坚果云/sourcecode/python/util")
 import common_pelvic_pt as common_pelvic
+import common_amos
 import common_brats_goat as common_brats
 import common_metrics
 
@@ -25,6 +26,8 @@ import common_metrics
 def pelvic_data_normalize(data):
     return (data.astype(numpy.float32) - common_pelvic.MIN_VALUE) / (common_pelvic.MAX_VALUE - common_pelvic.MIN_VALUE)
 
+def amos_data_normalize(data):
+    return data.astype(numpy.float32) / 255.
 
 class mae_dataset(data.Dataset):
     def __init__(self, cfg):
@@ -33,6 +36,8 @@ class mae_dataset(data.Dataset):
         self.dst_f = None
 
         if cfg.data.task == "pelvic":
+            pass
+        elif cfg.data.task == "amos":
             pass
         elif cfg.data.task == "brats":
             self.subject_groups = common_brats.calc_subject_partitions()
@@ -53,7 +58,6 @@ class mae_dataset(data.Dataset):
                 tmp_scans = numpy.array(self.dst_f["data"][subject_id])
 
             tmp_scans = pelvic_data_normalize(tmp_scans)
-
         elif self.cfg.data.task == "brats":
             if self.src_f is None:
                 self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
@@ -67,6 +71,19 @@ class mae_dataset(data.Dataset):
                 tmp_scans = numpy.array(self.dst_f["data"][self.subject_groups[1][0] + subject_id])
 
             tmp_scans = tmp_scans.astype(numpy.float32) / 255.
+        elif self.cfg.data.task == "amos":
+            if self.src_f is None:
+                self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
+                self.dst_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.dst_modality), "r")
+
+            if index // 2 == 0:
+                subject_id = random.randint(0, self.src_f["data"].shape[0] - 1)
+                tmp_scans = numpy.array(self.src_f["data"][subject_id])
+            else:
+                subject_id = random.randint(0, self.dst_f["data"].shape[0] - 1)
+                tmp_scans = numpy.array(self.dst_f["data"][subject_id])
+
+            tmp_scans = amos_data_normalize(tmp_scans)
 
         tmp_scans = random_flip(tmp_scans).copy()
 
@@ -166,6 +183,8 @@ class mpl_dataset(data.Dataset):
 
         if cfg.data.task == "pelvic":
             pass
+        elif cfg.data.task == "amos":
+            pass
         elif cfg.data.task == "brats":
             self.subject_groups = common_brats.calc_subject_partitions()
             print('num of source: ' + str(self.subject_groups[0][1]))
@@ -195,6 +214,25 @@ class mpl_dataset(data.Dataset):
             subject_id = random.randint(0, self.src_f["data"].shape[0] - 1)
             tmp_scansB = numpy.array(self.src_f["data"][subject_id])
             tmp_scansB = pelvic_data_normalize(tmp_scansB)
+            tmp_labelsB = numpy.array(self.src_f["label"][subject_id])
+        elif self.cfg.data.task == "amos":
+            if self.src_f is None:
+                self.src_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.src_modality), "r")
+                self.dst_f = h5py.File(os.path.join(self.cfg.data.mae_root, "train_%s.h5" % self.cfg.data.dst_modality), "r")
+
+            '''
+            load non-labeled data
+            '''
+            subject_id = random.randint(0, self.dst_f["data"].shape[0] - 1)
+            tmp_scansA = numpy.array(self.dst_f["data"][subject_id])
+            tmp_scansA = amos_data_normalize(tmp_scansA)
+
+            '''
+            load annotated data
+            '''
+            subject_id = random.randint(0, self.src_f["data"].shape[0] - 1)
+            tmp_scansB = numpy.array(self.src_f["data"][subject_id])
+            tmp_scansB = amos_data_normalize(tmp_scansB)
             tmp_labelsB = numpy.array(self.src_f["label"][subject_id])
         elif self.cfg.data.task == "brats":
             if self.src_f is None:
