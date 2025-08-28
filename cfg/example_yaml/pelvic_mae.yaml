@@ -2,7 +2,7 @@ system:
   project: 'pelvic'
   exp_name: 'mae'
   n_threads: 8
-  ckpt_dir: r'E:\training\checkpoints\mapseg'
+  ckpt_dir: r'/home/chenxu/training/checkpoints/mapseg'
   seed: 0
 
 train: 
@@ -12,7 +12,7 @@ train:
 
 data: 
   task: 'pelvic'
-  mae_root: r'F:\datasets\pelvic\h5_data'
+  mae_root: r'/home/chenxu/datasets/pelvic/h5_data'
   src_modality: 'ct'
   dst_modality: 'cbct'
 

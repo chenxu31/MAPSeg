@@ -20,7 +20,7 @@ train:
   patience: 75
   
 data: 
-  task: 'pelvic'
+  task: 'amos'
   mae_root: r'/home/chenxu/datasets/amos/h5_data'
   src_modality: 'mr'
   dst_modality: 'ct'
