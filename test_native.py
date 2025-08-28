@@ -142,7 +142,7 @@ if __name__ == '__main__':
     model = EMA_MPL(cfg)
     model.cuda()
     model.load_state_dict(torch.load(
-        os.path.join(args.exp_dir, 'best_model.pth')), strict=True)
+        os.path.join(args.exp_dir, 'solver_latest.pth')), strict=True)
 
     if cfg.data.task == "pelvic":
         _, test_data, _, test_label = common_pelvic.load_test_data(cfg.data.mae_root)
